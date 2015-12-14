@@ -1,6 +1,6 @@
 {
   "name": "f1code/wputils",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "WP Utilities",
   "type": "library",
   "license": "GPLv2",
@@ -13,8 +13,8 @@
     }
   ],
   "autoload": {
-    "psr-0": {
-      "F1\\WPUtils": "src"
+    "psr-4": {
+      "F1\\WPUtils\\": "src"
     }
   },
   "require": {
