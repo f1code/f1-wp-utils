@@ -10,7 +10,7 @@ namespace F1\WPUtils\Admin;
 /**
  * Helper for admin pages in Wordpress.
  * Note this can be used either as a base class of the plugin's admin page, or as an instantiated helper class.
- * When used as a base class, the settings can be added (with addSettings) either in the constructor or by 
+ * When used as a base class, the settings can be added (with addSettings) either in the constructor or by
  * overriding the adminInit function.
  *
  * @package F1\Core\WP
@@ -30,13 +30,23 @@ class AdminPageHelper
      */
     private $sanitizeOptionCallback;
 
-    function __construct($settingsName, $settingsLabel, $pluginName = null, $multiSite = false)
+    function __construct($settingsName, $settingsLabel, $multiSite = false)
     {
         $this->settingsName = $settingsName;
         $this->settingsLabel = $settingsLabel;
         $this->multiSite = $multiSite;
+    }
+
+    /**
+     * Register WP hooks to render admin page.
+     * Should be called inside of WP_Loaded hook, but can be called either after or before adding the settings.
+     *
+     * @param string $pluginName - If specified, this will register a "settings" link for the plugin.
+     */
+    public function registerOptionPage($pluginName = null)
+    {
         add_action('admin_init', array(&$this, 'adminInit'));
-        if ($multiSite) {
+        if ($this->multiSite) {
             add_action('network_admin_menu', array(&$this, 'networkAdminMenu'));
             add_action('update_wpmu_options', array(&$this, 'adminUpdateOptions'));
         } else {
