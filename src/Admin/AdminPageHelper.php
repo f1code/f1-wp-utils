@@ -8,7 +8,10 @@
 namespace F1\WPUtils\Admin;
 
 /**
- * Base class for admin pages
+ * Helper for admin pages in Wordpress.
+ * Note this can be used either as a base class of the plugin's admin page, or as an instantiated helper class.
+ * When used as a base class, the settings can be added (with addSettings) either in the constructor or by 
+ * overriding the adminInit function.
  *
  * @package F1\Core\WP
  */
@@ -35,7 +38,7 @@ class AdminPageHelper
         add_action('admin_init', array(&$this, 'adminInit'));
         if ($multiSite) {
             add_action('network_admin_menu', array(&$this, 'networkAdminMenu'));
-            add_action('update_wpmu_options', [$this, 'adminUpdateOptions']);
+            add_action('update_wpmu_options', array(&$this, 'adminUpdateOptions'));
         } else {
             add_action('admin_menu', array(&$this, 'adminMenu'));
         }
@@ -71,17 +74,17 @@ class AdminPageHelper
     public function addSetting($name, $label, $renderer = null, $args = null, $default = null)
     {
         if (!$renderer)
-            $renderer = [$this, 'createSettingsTextbox'];
-        $this->settings[] = ['name' => $name, 'label' => $label, 'renderer' => $renderer,
-            'args' => $args, 'default' => $default];
+            $renderer = array($this, 'createSettingsTextbox');
+        $this->settings[] = array('name' => $name, 'label' => $label, 'renderer' => $renderer,
+            'args' => $args, 'default' => $default);
     }
 
     public function adminInit()
     {
-        register_setting($this->settingsName, $this->settingsName, [$this, 'sanitizeOptions']);
+        register_setting($this->settingsName, $this->settingsName, array($this, 'sanitizeOptions'));
         add_settings_section('default', $this->settingsLabel, null, $this->settingsName);
         foreach ($this->settings as $setting) {
-            $args = ['name' => $setting['name']];
+            $args = array('name' => $setting['name']);
             if ($setting['args']) {
                 $args = array_merge($args, $setting['args']);
             }
@@ -95,7 +98,7 @@ class AdminPageHelper
     {
         if (current_user_can('manage_options')) {
             add_submenu_page('settings.php', $this->settingsLabel, $this->settingsLabel, 'manage_options',
-                $this->settingsName, [$this, 'outputNetworkPluginSettingsPage']);
+                $this->settingsName, array(&$this, 'outputNetworkPluginSettingsPage'));
         }
     }
 
@@ -103,7 +106,7 @@ class AdminPageHelper
     {
         if (current_user_can('manage_options')) {
             $this->optionPageHookSuffix = add_options_page($this->settingsLabel, $this->settingsLabel, 'manage_options',
-                $this->settingsName, [$this, 'outputPluginSettingsPage']);
+                $this->settingsName, array($this, 'outputPluginSettingsPage'));
             add_action('admin_enqueue_scripts', array(&$this, 'checkEnqueueScripts'));
         }
     }
