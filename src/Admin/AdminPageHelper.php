@@ -5,7 +5,7 @@
  * Created On: 10/17/2015
  */
 
-namespace F1\Core\WP;
+namespace F1\WPUtils\Admin;
 
 /**
  * Base class for admin pages
