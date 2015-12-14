@@ -4,7 +4,7 @@
   "description": "WP Utilities",
   "type": "library",
   "license": "GPLv2",
-  "authors" [
+  "authors": [
     {
       "name": "F1 Code",
       "email": "nic@f1code.com",
