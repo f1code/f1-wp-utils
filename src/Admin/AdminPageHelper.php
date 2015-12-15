@@ -71,27 +71,24 @@ class AdminPageHelper
     }
 
     /**
-     * Allow defining a callback for sanitize option call.
-     * Callback will be passed the options which it should return.
+     * Register a new setting
      *
-     * @param callable $callback
+     * @param string $name
+     * @param string $label
+     * @param callable $renderer
+     * @param array $args
      */
-    public function onSanitizeOption($callback)
-    {
-        $this->sanitizeOptionCallback = $callback;
-    }
-
-    public function addSetting($name, $label, $renderer = null, $args = null, $default = null)
+    public function addSetting($name, $label, $renderer = null, $args = null)
     {
         if (!$renderer)
             $renderer = array($this, 'createSettingsTextbox');
         $this->settings[] = array('name' => $name, 'label' => $label, 'renderer' => $renderer,
-            'args' => $args, 'default' => $default);
+            'args' => $args);
     }
 
     public function adminInit()
     {
-        register_setting($this->settingsName, $this->settingsName, array($this, 'sanitizeOptions'));
+        register_setting($this->settingsName, $this->settingsName, array($this, 'onSanitizeOptions'));
         add_settings_section('default', $this->settingsLabel, null, $this->settingsName);
         foreach ($this->settings as $setting) {
             $args = array('name' => $setting['name']);
@@ -121,6 +118,9 @@ class AdminPageHelper
         }
     }
 
+    /**
+     * Used for network settings page
+     */
     public function adminUpdateOptions()
     {
         if (isset($_GET['settings']) && $_GET['settings'] == $this->settingsName) {
@@ -129,19 +129,11 @@ class AdminPageHelper
                 $cleanPost = array_map('stripslashes_deep', $cleanPost);
             }
             $options = $cleanPost[$this->settingsName];
-            $options = $this->sanitizeOptions($options);
+            $options = $this->onSanitizeOptions($options);
             update_site_option($this->settingsName, $options);
             wp_redirect(network_admin_url('settings.php?updated=true&page=' . $this->settingsName));
             exit();
         }
-    }
-
-    public function sanitizeOptions($options)
-    {
-        if ($this->sanitizeOptionCallback) {
-            return call_user_func($this->sanitizeOptionCallback, $options);
-        }
-        return $options;
     }
 
     public function outputNetworkPluginSettingsPage()
@@ -159,18 +151,21 @@ class AdminPageHelper
         do_settings_sections($this->settingsName);
         submit_button();
 
+        $this->onOutputSettingsPage();
+
         echo '</form></div>';
     }
 
     public function outputPluginSettingsPage()
     {
-
         /** @noinspection HtmlUnknownTarget */
         echo '<div class="wrap"><form method="POST" action="option.php">';
 
         settings_fields($this->settingsName);
         do_settings_sections($this->settingsName);
         submit_button();
+
+        $this->onOutputSettingsPage();
 
         echo '</form></div>';
     }
@@ -230,15 +225,60 @@ class AdminPageHelper
     public function checkEnqueueScripts($hookSuffix)
     {
         if ($hookSuffix == $this->optionPageHookSuffix) {
-            $this->doEnqueueScripts();
+            $this->onEnqueueScripts();
         }
     }
+
+
+    ///////////////////////////////////////////////////////////////////
+    /////////////// OVERRIDABLE API ///////////////////////////////////
+    ///////////////////////////////////////////////////////////////////
 
     /**
      * This can be overridden to enqueue scripts needed by the admin page
      */
-    protected function doEnqueueScripts()
+    protected function onEnqueueScripts()
     {
 
     }
+
+    /**
+     * Can be overridden to provide a cleanup function for the options.
+     *
+     * @param array $options
+     * @return array - sanitized options should be returned
+     */
+    public function onSanitizeOptions($options)
+    {
+        if ($this->sanitizeOptionCallback) {
+            return call_user_func($this->sanitizeOptionCallback, $options);
+        }
+        return $options;
+    }
+
+    /**
+     * Can be overridden to customize the page output.
+     * This function is called inside of the form itself, right after the submit button.
+     * Another option is to override the outputPluginSettingsPage function and replace the page completely.
+     */
+    protected function onOutputSettingsPage()
+    {
+
+    }
+
+    ///////////////////////////////////////////////////////////////////
+    /////////////// PUBLIC API ////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////
+
+    /**
+     * Allow defining a callback for sanitize option call.
+     * Callback will be passed the options which it should return.
+     *
+     * @param callable $callback
+     */
+    public function setOnSanitizeOptionCallback($callback)
+    {
+        $this->sanitizeOptionCallback = $callback;
+    }
+
 }
