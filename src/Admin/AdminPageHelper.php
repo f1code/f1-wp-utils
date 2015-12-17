@@ -77,13 +77,14 @@ class AdminPageHelper
      * @param string $label
      * @param callable $renderer
      * @param array $args
+     * @param mixed $default - a default value for the setting
      */
-    public function addSetting($name, $label, $renderer = null, $args = null)
+    public function addSetting($name, $label, $renderer = null, $args = null, $default = null)
     {
         if (!$renderer)
             $renderer = array($this, 'createSettingsTextbox');
         $this->settings[] = array('name' => $name, 'label' => $label, 'renderer' => $renderer,
-            'args' => $args);
+            'args' => $args, 'default' => $default);
     }
 
     public function adminInit()
@@ -159,7 +160,7 @@ class AdminPageHelper
     public function outputPluginSettingsPage()
     {
         /** @noinspection HtmlUnknownTarget */
-        echo '<div class="wrap"><form method="POST" action="option.php">';
+        echo '<div class="wrap"><form method="POST" action="options.php">';
 
         settings_fields($this->settingsName);
         do_settings_sections($this->settingsName);
@@ -192,28 +193,6 @@ class AdminPageHelper
         if ($label) {
             echo "<label for='$optionName'>$label</label>";
         }
-    }
-
-    public function getOption($optionName = null)
-    {
-        if ($this->multiSite) {
-            $options = get_site_option($this->settingsName);
-        } else {
-            $options = get_option($this->settingsName);
-        }
-        if (!$optionName)
-            return $options;
-
-        if (is_array($options) && isset($options[$optionName]))
-            return $options[$optionName];
-        foreach ($this->settings as $setting) {
-            if ($setting['name'] == $optionName) {
-                if (!empty($setting['default']))
-                    return $setting['default'];
-                break;
-            }
-        }
-        return null;
     }
 
 
@@ -281,4 +260,50 @@ class AdminPageHelper
         $this->sanitizeOptionCallback = $callback;
     }
 
+    /**
+     * Retrieve option value.
+     * If the option is not set and a default was provided when adding the setting, it will be returned instead.
+     *
+     * @param string $optionName
+     * @return mixed
+     */
+    public function getOption($optionName = null)
+    {
+        if ($this->multiSite) {
+            $options = get_site_option($this->settingsName);
+        } else {
+            $options = get_option($this->settingsName);
+        }
+        if (!$optionName)
+            return $options;
+
+        if (is_array($options) && isset($options[$optionName]))
+            return $options[$optionName];
+        foreach ($this->settings as $setting) {
+            if ($setting['name'] == $optionName) {
+                if (!empty($setting['default']))
+                    return $setting['default'];
+                break;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Save option
+     *
+     * @param string $optionName
+     * @param mixed $value
+     */
+    public function saveOption($optionName, $value)
+    {
+        $options = $this->getOption();
+        $options[$optionName] = $value;
+
+        if ($this->multiSite) {
+            update_site_option($this->settingsName, $options);
+        } else {
+            update_option($this->settingsName, $options);
+        }
+    }
 }
